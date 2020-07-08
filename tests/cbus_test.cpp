@@ -7,6 +7,8 @@
 struct virtual_bus {
   void register_handler(std::function<void(const std::string&)> feed) { virtual_bus::feed = feed; }
   std::function<void(const std::string&)> feed;
+  std::vector<std::string> buf;
+  void send(std::string data) { buf.push_back(data); }
 };
 
 TEST_CASE("test close on garbage") {
@@ -73,7 +75,51 @@ TEST_CASE("test simple receive of rtu packet (wikipedia)") {
   CHECK(cnt == 1);
 }
 
-/*TEST_CASE("test simple receive of rtu packet") {
+TEST_CASE("test simple send of rtu packet") {
+  uint64_t time = 0;
+  uint_least32_t cnt = 0;
+  cbus::config cfg;
+  cfg.now = [&time] { return time; };
+  cfg.close_on_timeout = true;
+  cfg.use_tcp_format = false;
+  cfg.is_master = true;
+  cfg.address = 0;
+  std::shared_ptr<virtual_bus> vbus = std::make_shared<virtual_bus>();
+  cbus::bus<virtual_bus> b(vbus, cfg, [&cnt](const cbus::single_packet& pkg) { cnt++; });
+  CHECK(b.open());
+  CHECK(cnt == 0);
+  cbus::read_input_registers_request req(0, 0x1, 0x35, 0x27);
+  CHECK(vbus->buf.size() == 0);
+  b.send(req);
+  CHECK(vbus->buf.size() == 1);
+  CHECK(vbus->buf.at(0) == std::string("\x01\x04\x00\x35\x00\x27\x00\x1e", 8));
+  CHECK(b.open());
+  CHECK(cnt == 0);
+}
+
+TEST_CASE("test simple send of tcp packet") {
+  uint64_t time = 0;
+  uint_least32_t cnt = 0;
+  cbus::config cfg;
+  cfg.now = [&time] { return time; };
+  cfg.close_on_timeout = true;
+  cfg.use_tcp_format = true;
+  cfg.is_master = true;
+  cfg.address = 0;
+  std::shared_ptr<virtual_bus> vbus = std::make_shared<virtual_bus>();
+  cbus::bus<virtual_bus> b(vbus, cfg, [&cnt](const cbus::single_packet& pkg) { cnt++; });
+  CHECK(b.open());
+  CHECK(cnt == 0);
+  cbus::read_input_registers_request req(0, 0x1, 0x35, 0x27);
+  CHECK(vbus->buf.size() == 0);
+  b.send(req);
+  CHECK(vbus->buf.size() == 1);
+  CHECK(vbus->buf.at(0) == std::string("\x00\x00\x00\x00\x00\x06\x01\x04\x00\x35\x00\x27", 12));
+  CHECK(b.open());
+  CHECK(cnt == 0);
+}
+
+TEST_CASE("test simple receive of rtu packet") {
   uint64_t time = 0;
   uint_least32_t cnt = 0;
   cbus::config cfg;
@@ -91,11 +137,11 @@ TEST_CASE("test simple receive of rtu packet (wikipedia)") {
   });
   CHECK(b.open());
   CHECK(cnt == 0);
-  std::string data("\x42\x01\x01\x34\x38\x42", 6);
+  std::string data("\x42\x01\x01\x34\x45\xdb", 6);
   vbus->feed(data);
   CHECK(b.open());
   CHECK(cnt == 1);
-}*/
+}
 
 TEST_CASE("test simple ignore of tcp packet for other addr") {
   uint64_t time = 0;

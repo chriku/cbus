@@ -79,5 +79,15 @@ namespace cbus {
     becker::assert(start_index < string.size(), __FILE__, __LINE__);
     return ((uint8_t)string.at(start_index));
   }
+
+  std::string set_u8(const uint8_t value) { return std::string((const char*)&value, 1); }
+  std::string set_u16(const uint16_t value) {
+    uint8_t val[2];
+    val[0] = ((uint8_t)value >> 8);
+    val[1] = ((uint8_t)value & 0xff);
+    return std::string((char*)val, 2);
+  }
+
   template <typename T> single_packet parse_single_packet(const packet& header, const std::string& content, uint_least64_t& size);
+  template <typename T> std::string serialize_single_packet(const T& packet);
 } // namespace cbus

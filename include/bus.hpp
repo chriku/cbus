@@ -71,6 +71,29 @@ namespace cbus {
      */
     std::string error_string() const { return error_string_; }
 
+    /**
+     * \brief send a packet
+     * \param packet the packet to send
+     */
+    template <typename packet_type> void send(const packet_type& packet) {
+      std::string output;
+      std::string content = serialize_single_packet<packet_type>(packet);
+      if (config_.use_tcp_format) {
+        output.append(set_u16(packet.transaction_id));
+        output.append(set_u16(0));
+        output.append(set_u16(content.size() + 2));
+        output.append(set_u8(packet.address));
+        output.append(set_u8((uint8_t)packet.function));
+        output.append(content);
+      } else {
+        output.append(set_u8(packet.address));
+        output.append(set_u8((uint8_t)packet.function));
+        output.append(serialize_single_packet<packet_type>(packet));
+        output.append(set_u16(calc_crc(output)));
+      }
+      device_->send(output);
+    }
+
   private:
     /**
      * \brief close the bus
@@ -228,6 +251,7 @@ namespace cbus {
       }
       return true;
     }
+
     /**
      * \brief extract single received rtu packet
      * \return true to continue, false to abort reading
