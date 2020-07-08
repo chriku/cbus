@@ -18,7 +18,7 @@ namespace becker {
     assertion_failed_error(const char* file, uint_fast32_t line, std::string assertion_failed)
         : std::runtime_error(std::string(file) + ":" + std::to_string(line) + ": " + assertion_failed) {}
   };
-  void assert(bool condition, const char* file, uint_fast32_t line, std::string assertion_failed = "assertion_failed") {
+  void assert(bool condition, const char* file, uint_fast32_t line, std::string assertion_failed = "becker's baking burned") {
     if (!condition) {
       throw assertion_failed_error(file, line, assertion_failed);
     }
