@@ -6,7 +6,7 @@ target_include_directories (cbus INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(cbus_test tests/cbus_test.cpp)
 target_link_libraries(cbus_test cbus)
 target_include_directories(cbus_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/doctest/doctest/)
-set_property(TARGET cbus_test PROPERTY CXX_STANDARD 14)
+set_property(TARGET cbus_test PROPERTY CXX_STANDARD 17)
 
 
 option(BUILD_DOC "Build documentation" ON)
