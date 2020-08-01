@@ -4,6 +4,7 @@
 #include "packet.hpp"
 #include <functional>
 #include <memory>
+#include <string.h>
 #include <string>
 #include <variant>
 
@@ -18,20 +19,21 @@ namespace cbus {
      * \param address The address of the target
      * \param  coil_data The content
      */
-    read_coils_response(const uint16_t transaction_id, uint8_t address, std::string coil_data) : packet(transaction_id, address, function_code::read_coils), coil_data(coil_data) {}
+    read_coils_response(const uint16_t transaction_id, uint8_t address, std::vector<bool> coil_data)
+        : packet(transaction_id, address, function_code::read_coils), coil_data(coil_data) {}
     /**
      * \brief construct new read_coils_response
      * \param header containing header struff
      * \param coil_data string describing the content of the coils
      */
-    read_coils_response(const packet& header, std::string coil_data) : packet(header), coil_data(coil_data) {}
+    read_coils_response(const packet& header, std::vector<bool> coil_data) : packet(header), coil_data(coil_data) {}
     /**
      * \brief Value of each coil/discrete input is binary (0 for off, 1 for on). First requested coil/discrete input is stored as least significant bit of first byte in reply.
      * If number of coils/discrete inputs is not a multiple of 8, most significant bit(s) of last byte will be stuffed with zeros.
      * For example, if eleven coils are requested, two bytes of values are needed. Suppose states of those successive coils are on, off, on, off, off, on, on, on, off, on, on, then
      * the response will be 02 E5 06 in hexadecimal.
      */
-    std::string coil_data;
+    std::vector<bool> coil_data;
   };
 
   /**
@@ -74,18 +76,18 @@ namespace cbus {
      * \param address The address of the target
      * \param register_data The content
      */
-    read_input_registers_response(const uint16_t transaction_id, uint8_t address, std::string register_data)
+    read_input_registers_response(const uint16_t transaction_id, uint8_t address, std::vector<uint16_t> register_data)
         : packet(transaction_id, address, function_code::read_input_registers), register_data(register_data) {}
     /**
      * \brief construct new read_registers_response
      * \param header containing header struff
      * \param register_data string describing the content of the registers
      */
-    read_input_registers_response(const packet& header, std::string register_data) : packet(header), register_data(register_data) {}
+    read_input_registers_response(const packet& header, std::vector<uint16_t> register_data) : packet(header), register_data(register_data) {}
     /**
      * \brief Value of each register
      */
-    std::string register_data;
+    std::vector<uint16_t> register_data;
   };
 
   /**
@@ -126,7 +128,14 @@ namespace cbus {
     if (content.size() < (1 + len))
       return not_enough_data{};
     size = len + 1;
-    return read_coils_response(header, content.substr(1, len));
+    std::string raw_reg_data = content.substr(1, len);
+    std::vector<bool> response_data;
+    for (int8_t byte : raw_reg_data) {
+      uint8_t value = byte;
+      for (uint_fast8_t i = 0; i < 8; i++)
+        response_data.push_back((value & (1 << i)) != 0);
+    }
+    return read_coils_response(header, response_data);
   }
 
   template <> single_packet parse_single_packet<read_coils_request>(const packet& header, const std::string& content, uint_least64_t& size) {
@@ -145,7 +154,12 @@ namespace cbus {
     if (content.size() < (1 + len))
       return not_enough_data{};
     size = len + 1;
-    return read_input_registers_response(header, content.substr(1, len));
+    std::string u16_arr = content.substr(1, len);
+    std::vector<uint16_t> nd;
+    for (uint_fast32_t i = 0; i < u16_arr.size(); i += 2) {
+      nd.push_back(get_u16(u16_arr, i));
+    }
+    return read_input_registers_response(header, nd);
   }
 
   template <> single_packet parse_single_packet<read_input_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
@@ -161,8 +175,23 @@ namespace cbus {
     return set_u16(packet.first_register) + set_u16(packet.register_count);
   }
   template <> std::string serialize_single_packet<read_input_registers_response>(const read_input_registers_response& packet) {
-    return set_u8(packet.register_data.size()) + packet.register_data;
+    std::string ret = set_u8(packet.register_data.size());
+    for (uint16_t v : packet.register_data)
+      ret += set_u16(v);
+    return ret;
   }
   template <> std::string serialize_single_packet<read_coils_request>(const read_coils_request& packet) { return set_u16(packet.first_coil) + set_u16(packet.coil_count); }
-  template <> std::string serialize_single_packet<read_coils_response>(const read_coils_response& packet) { return set_u8(packet.coil_data.size()) + packet.coil_data; }
+  template <> std::string serialize_single_packet<read_coils_response>(const read_coils_response& packet) {
+    std::string ret = set_u8(packet.coil_data.size());
+    std::vector<bool> data = packet.coil_data;
+    while (data.size() % 8)
+      data.push_back(false);
+    for (uint_least32_t i = 0; i < data.size(); i += 8) {
+      uint8_t b = 0;
+      for (uint8_t j = 0; j < 8; j++)
+        if (data.at(i + j))
+          b |= 1 << j;
+    }
+    return ret;
+  }
 } // namespace cbus

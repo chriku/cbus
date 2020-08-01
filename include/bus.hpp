@@ -74,6 +74,7 @@ namespace cbus {
     /**
      * \brief send a packet
      * \param packet the packet to send
+     * The resulting device->send call always receives excatly one complete package.
      */
     template <typename packet_type> void send(const packet_type& packet) {
       std::string output;

@@ -63,9 +63,8 @@ TEST_CASE("test simple receive of rtu packet (wikipedia)") {
   cbus::bus<virtual_bus> b(vbus, cfg, [&cnt](const cbus::single_packet& pkg) {
     cnt++;
     CHECK(std::holds_alternative<cbus::read_input_registers_response>(pkg));
-    CHECK(std::get<cbus::read_input_registers_response>(pkg).register_data.size() == 2);
-    CHECK(((uint8_t)std::get<cbus::read_input_registers_response>(pkg).register_data.at(0)) == ((uint8_t)0xff));
-    CHECK(((uint8_t)std::get<cbus::read_input_registers_response>(pkg).register_data.at(1)) == ((uint8_t)0xff));
+    CHECK(std::get<cbus::read_input_registers_response>(pkg).register_data.size() == 1);
+    CHECK(std::get<cbus::read_input_registers_response>(pkg).register_data.at(0) == 0xffff);
   });
   CHECK(b.open());
   CHECK(cnt == 0);
@@ -132,8 +131,15 @@ TEST_CASE("test simple receive of rtu packet") {
   cbus::bus<virtual_bus> b(vbus, cfg, [&cnt](const cbus::single_packet& pkg) {
     cnt++;
     CHECK(std::holds_alternative<cbus::read_coils_response>(pkg));
-    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.size() == 1);
-    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(0) == 0x34);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.size() == 8);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(0) == false);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(1) == false);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(2) == true);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(3) == false);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(4) == true);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(5) == true);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(6) == false);
+    CHECK(std::get<cbus::read_coils_response>(pkg).coil_data.at(7) == false);
   });
   CHECK(b.open());
   CHECK(cnt == 0);
