@@ -13,18 +13,27 @@ namespace cbus {
   struct read_coils_request;
   struct read_input_registers_request;
   struct read_input_registers_response;
+  struct read_holding_registers_request;
+  struct read_holding_registers_response;
+  struct write_single_holding_register_request;
+  struct write_single_holding_register_response;
+  struct write_holding_registers_request;
+  struct write_holding_registers_response;
+  struct error_response;
 
-  using single_packet = std::variant<not_enough_data, packet_error, read_coils_response, read_coils_request, read_input_registers_response, read_input_registers_request>;
+  using single_packet = std::variant<not_enough_data, packet_error, read_coils_response, read_coils_request, read_input_registers_response, read_input_registers_request,
+                                     read_holding_registers_response, read_holding_registers_request, error_response, write_single_holding_register_request,
+                                     write_single_holding_register_response, write_holding_registers_request, write_holding_registers_response>;
   enum class function_code {
     invalid = 0,
     read_coils = 1,
     read_discrete_inputs = 2,
-    read_multiple_holding_registers = 3,
+    read_holding_registers = 3,
     read_input_registers = 4,
     write_single_coil = 5,
     write_single_holding_register = 6,
     write_multiple_coils = 15,
-    write_multiple_holding_registers = 16
+    write_holding_registers = 16
   };
 
   /**

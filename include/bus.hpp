@@ -148,6 +148,12 @@ namespace cbus {
         switch (header.function) {
         case function_code::read_coils:
           return parse_single_packet<read_coils_response>(header, content, size);
+        case function_code::read_holding_registers:
+          return parse_single_packet<read_holding_registers_response>(header, content, size);
+        case function_code::write_holding_registers:
+          return parse_single_packet<write_holding_registers_response>(header, content, size);
+        case function_code::write_single_holding_register:
+          return parse_single_packet<write_single_holding_register_response>(header, content, size);
         case function_code::read_input_registers:
           return parse_single_packet<read_input_registers_response>(header, content, size);
         default:
@@ -159,6 +165,12 @@ namespace cbus {
           return parse_single_packet<read_coils_request>(header, content, size);
         case function_code::read_input_registers:
           return parse_single_packet<read_input_registers_request>(header, content, size);
+        case function_code::read_holding_registers:
+          return parse_single_packet<read_holding_registers_request>(header, content, size);
+        case function_code::write_holding_registers:
+          return parse_single_packet<write_holding_registers_request>(header, content, size);
+        case function_code::write_single_holding_register:
+          return parse_single_packet<write_single_holding_register_request>(header, content, size);
         default:
           return packet_error{};
         }
