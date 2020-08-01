@@ -175,14 +175,14 @@ namespace cbus {
     return set_u16(packet.first_register) + set_u16(packet.register_count);
   }
   template <> std::string serialize_single_packet<read_input_registers_response>(const read_input_registers_response& packet) {
-    std::string ret = set_u8(packet.register_data.size());
+    std::string ret = set_u8(packet.register_data.size() * 2);
     for (uint16_t v : packet.register_data)
       ret += set_u16(v);
     return ret;
   }
   template <> std::string serialize_single_packet<read_coils_request>(const read_coils_request& packet) { return set_u16(packet.first_coil) + set_u16(packet.coil_count); }
   template <> std::string serialize_single_packet<read_coils_response>(const read_coils_response& packet) {
-    std::string ret = set_u8(packet.coil_data.size());
+    std::string ret = set_u8((packet.coil_data.size() + 7) / 8);
     std::vector<bool> data = packet.coil_data;
     while (data.size() % 8)
       data.push_back(false);

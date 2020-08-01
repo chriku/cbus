@@ -62,7 +62,7 @@ namespace cbus {
    * \return the read and converted values
    */
   uint16_t get_u16(const std::string string, const size_t start_index = 0) {
-    becker::assert((start_index + 1) < string.size(), __FILE__, __LINE__);
+    becker::bassert((start_index + 1) < string.size(), __FILE__, __LINE__);
     uint16_t value = 0;
     value |= ((uint8_t)string.at(start_index));
     value <<= 8;
@@ -76,7 +76,7 @@ namespace cbus {
    * \return the read and converted values
    */
   uint8_t get_u8(const std::string string, const size_t start_index = 0) {
-    becker::assert(start_index < string.size(), __FILE__, __LINE__);
+    becker::bassert(start_index < string.size(), __FILE__, __LINE__);
     return ((uint8_t)string.at(start_index));
   }
 

@@ -42,8 +42,10 @@ namespace cbus {
      */
     bus(const std::shared_ptr<device_type> device, const config& cfg, const std::function<void(const single_packet&)> packet_emission)
         : device_(device), config_(cfg), packet_emission_(packet_emission) {
-      if ((!cfg.is_master) && (!cfg.use_tcp_format))
-        throw std::invalid_argument("Cannot become RTU-Slave");
+      if ((!cfg.is_master) && (!cfg.use_tcp_format)) {
+        std::cerr << "Cannot become RTU-Slave" << std::endl;
+        abort();
+      }
       bus_valid_ = std::make_shared<bool>(true);
       init_bus_handler();
     }
@@ -272,8 +274,8 @@ namespace cbus {
      * \brief Read all available tcp packets
      */
     void read_tcp_packets() {
-      becker::assert(config_.use_tcp_format, __FILE__, __LINE__, "calling tcp in rtu mode");
-      becker::assert(cache_.size() > 0, __FILE__, __LINE__, "cache empty");
+      becker::bassert(config_.use_tcp_format, __FILE__, __LINE__, "calling tcp in rtu mode");
+      becker::bassert(cache_.size() > 0, __FILE__, __LINE__, "cache empty");
       while (cache_.size() > 0) {
         if (!extract_single_tcp_packet())
           break;
@@ -284,8 +286,8 @@ namespace cbus {
      * \brief Read all available rtu packets
      */
     void read_rtu_packets() {
-      becker::assert(!config_.use_tcp_format, __FILE__, __LINE__, "calling rtu in tcp mode");
-      becker::assert(cache_.size() > 0, __FILE__, __LINE__, "cache empty");
+      becker::bassert(!config_.use_tcp_format, __FILE__, __LINE__, "calling rtu in tcp mode");
+      becker::bassert(cache_.size() > 0, __FILE__, __LINE__, "cache empty");
       while (cache_.size() > 0) {
         if (!extract_single_rtu_packet())
           break;
@@ -297,9 +299,11 @@ namespace cbus {
      * Timeouts are NOT enlarged by the received time to allow a large receive after missing a timeout.
      */
     void feed(const std::string& data) {
+      std::cout << "Closed: " << closed_ << std::endl;
       if (closed_)
         return;
       refresh_timeouts(data.size() > 0);
+      std::cout << "Closed: " << closed_ << std::endl;
       if (closed_)
         return;
       cache_.append(data);
@@ -313,9 +317,9 @@ namespace cbus {
 
     std::string cache_;
     bool closed_ = false;
-    config config_;
     std::shared_ptr<bool> bus_valid_;
     std::shared_ptr<device_type> device_;
+    config config_;
     int_least64_t last_byte_received_time_;
     std::string error_string_;
     const std::function<void(const single_packet&)> packet_emission_;
