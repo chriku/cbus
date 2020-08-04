@@ -266,7 +266,6 @@ namespace cbus {
         }
         uint16_t read_crc = get_u16(cache_, 2 + read_size);
         if (read_crc != calc_crc(cache_.substr(0, 2 + read_size))) {
-          std::cout << std::hex << read_crc << ":" << calc_crc(cache_.substr(0, 2 + read_size)) << std::dec << std::endl;
           cache_ = cache_.substr(1);
           return false;
         }
