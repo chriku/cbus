@@ -40,5 +40,7 @@ namespace cbus {
      * \brief address of this node
      */
     uint8_t address;
+
+    bool close_on_error=false;
   };
 } // namespace cbus

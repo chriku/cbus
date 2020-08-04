@@ -12,7 +12,7 @@
 
 namespace cbus {
 
-  uint16_t calc_crc(std::string data) {
+  inline uint16_t calc_crc(std::string data) {
     uint16_t crc = 0xFFFF;
 
     for (uint_fast32_t pos = 0; pos < data.size(); pos++) {
@@ -40,7 +40,7 @@ namespace cbus {
      * \param cfg The config to user
      * \param packet_emission Callback to be called on incoming packet
      */
-    bus(const std::shared_ptr<device_type> device, const config& cfg, const std::function<void(const single_packet&)> packet_emission)
+    bus(const std::weak_ptr<device_type> device, const config& cfg, const std::function<void(const single_packet&)> packet_emission)
         : device_(device), config_(cfg), packet_emission_(packet_emission) {
       if ((!cfg.is_master) && (!cfg.use_tcp_format)) {
         std::cerr << "Cannot become RTU-Slave" << std::endl;
@@ -94,7 +94,9 @@ namespace cbus {
         output.append(serialize_single_packet<packet_type>(packet));
         output.append(set_u16(calc_crc(output)));
       }
-      device_->send(output);
+      std::shared_ptr<device_type> device = device_.lock();
+      if (device)
+        device->send(output);
     }
 
   private:
@@ -132,10 +134,12 @@ namespace cbus {
      */
     void init_bus_handler() {
       std::shared_ptr<bool> bus_valid = bus_valid_;
-      device_->register_handler([bus_valid, this](const std::string& data) {
-        if (*bus_valid)
-          feed(data);
-      });
+      std::shared_ptr<device_type> device = device_.lock();
+      if (device)
+        device->register_handler([bus_valid, this](const std::string& data) {
+          if (*bus_valid)
+            feed(data);
+        });
     }
 
     /**
@@ -157,7 +161,7 @@ namespace cbus {
         case function_code::read_input_registers:
           return parse_single_packet<read_input_registers_response>(header, content, size);
         default:
-          return packet_error{};
+          return packet_error(header);
         }
       } else {
         switch (header.function) {
@@ -172,10 +176,10 @@ namespace cbus {
         case function_code::write_single_holding_register:
           return parse_single_packet<write_single_holding_register_request>(header, content, size);
         default:
-          return packet_error{};
+          return packet_error(header);
         }
       }
-      return packet_error{};
+      return packet_error(header);
     }
 
     /**
@@ -189,8 +193,13 @@ namespace cbus {
       if (config_.is_master || (pkg.address == config_.address)) {
         single_packet result = parse_packet(pkg, content, read_size);
         if (std::holds_alternative<packet_error>(result)) {
-          close("packet error");
-          return false;
+          if (config_.close_on_error) {
+            close("packet error");
+            return false;
+          } else {
+            packet_emission_(result);
+            return true;
+          }
         }
         if (std::holds_alternative<not_enough_data>(result)) {
           return false;
@@ -311,11 +320,9 @@ namespace cbus {
      * Timeouts are NOT enlarged by the received time to allow a large receive after missing a timeout.
      */
     void feed(const std::string& data) {
-      std::cout << "Closed: " << closed_ << std::endl;
       if (closed_)
         return;
       refresh_timeouts(data.size() > 0);
-      std::cout << "Closed: " << closed_ << std::endl;
       if (closed_)
         return;
       cache_.append(data);
@@ -330,7 +337,7 @@ namespace cbus {
     std::string cache_;
     bool closed_ = false;
     std::shared_ptr<bool> bus_valid_;
-    std::shared_ptr<device_type> device_;
+    std::weak_ptr<device_type> device_;
     config config_;
     int_least64_t last_byte_received_time_;
     std::string error_string_;

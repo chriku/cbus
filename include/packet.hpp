@@ -8,7 +8,7 @@
 
 namespace cbus {
   struct not_enough_data {};
-  struct packet_error {};
+  struct packet_error;
   struct read_coils_response;
   struct read_coils_request;
   struct read_input_registers_request;
@@ -65,12 +65,20 @@ namespace cbus {
      */
     const function_code function;
   };
+
+  struct packet_error: packet {
+packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function):packet(p_transaction_id,p_address,p_function){}
+packet_error(const packet& header)
+        : packet(header){}
+};
+
+
   /**
    * \brief Read single 16bit value
    * \param start_index the first byte in cache_ to read
    * \return the read and converted values
    */
-  uint16_t get_u16(const std::string string, const size_t start_index = 0) {
+  inline uint16_t get_u16(const std::string string, const size_t start_index = 0) {
     becker::bassert((start_index + 1) < string.size(), __FILE__, __LINE__);
     uint16_t value = 0;
     value |= ((uint8_t)string.at(start_index));
@@ -84,15 +92,15 @@ namespace cbus {
    * \param start_index the first byte in cache_ to read
    * \return the read and converted values
    */
-  uint8_t get_u8(const std::string string, const size_t start_index = 0) {
+  inline uint8_t get_u8(const std::string string, const size_t start_index = 0) {
     becker::bassert(start_index < string.size(), __FILE__, __LINE__);
     return ((uint8_t)string.at(start_index));
   }
 
-  std::string set_u8(const uint8_t value) { return std::string((const char*)&value, 1); }
-  std::string set_u16(const uint16_t value) {
+  inline std::string set_u8(const uint8_t value) { return std::string((const char*)&value, 1); }
+  inline std::string set_u16(const uint16_t value) {
     uint8_t val[2];
-    val[0] = ((uint8_t)value >> 8);
+    val[0] = ((uint8_t)(value >> 8));
     val[1] = ((uint8_t)value & 0xff);
     return std::string((char*)val, 2);
   }

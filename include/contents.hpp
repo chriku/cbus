@@ -217,17 +217,16 @@ namespace cbus {
      * \param first_register The content
      * \param register_count The content
      */
-    write_holding_registers_request(const uint16_t transaction_id, uint8_t address, uint16_t first_register, uint16_t register_count, std::vector<uint16_t> register_content)
-        : packet(transaction_id, address, function_code::write_holding_registers), first_register(first_register), register_count(register_count),
-          register_content(register_content) {}
+    write_holding_registers_request(const uint16_t transaction_id, uint8_t address, uint16_t first_register, std::vector<uint16_t> register_content)
+        : packet(transaction_id, address, function_code::write_holding_registers), first_register(first_register), register_content(register_content) {}
     /**
      * \brief construct new register_registers_request
      * \param header containing header struff
      * \param first_register index of first register
      * \param register_count number of registers to request
      */
-    write_holding_registers_request(const packet& header, const uint16_t first_register, const uint16_t register_count, std::vector<uint16_t> register_content)
-        : packet(header), first_register(first_register), register_count(register_count), register_content(register_content) {}
+    write_holding_registers_request(const packet& header, const uint16_t first_register, std::vector<uint16_t> register_content)
+        : packet(header), first_register(first_register), register_content(register_content) {}
     /**
      * \brief First Coil index
      */
@@ -235,7 +234,6 @@ namespace cbus {
     /**
      * \brief Number of registers
      */
-    uint16_t register_count;
     std::vector<uint16_t> register_content;
   };
 
@@ -303,7 +301,7 @@ namespace cbus {
     error_code error;
   };
 
-  template <> single_packet parse_single_packet<read_coils_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_coils_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 1)
       return not_enough_data{};
     uint8_t len = get_u8(content, 0);
@@ -320,7 +318,7 @@ namespace cbus {
     return read_coils_response(header, response_data);
   }
 
-  template <> single_packet parse_single_packet<read_coils_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_coils_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_coil = get_u16(content, 0);
@@ -329,7 +327,7 @@ namespace cbus {
     return read_coils_request(header, first_coil, coil_count);
   }
 
-  template <> single_packet parse_single_packet<read_input_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <> inline single_packet parse_single_packet<read_input_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 1)
       return not_enough_data{};
     uint8_t len = get_u8(content, 0);
@@ -344,7 +342,7 @@ namespace cbus {
     return read_input_registers_response(header, nd);
   }
 
-  template <> single_packet parse_single_packet<read_input_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <>inline single_packet parse_single_packet<read_input_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -353,7 +351,7 @@ namespace cbus {
     return read_input_registers_request(header, first_register, register_count);
   }
 
-  template <> single_packet parse_single_packet<read_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <> inline single_packet parse_single_packet<read_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 1)
       return not_enough_data{};
     uint8_t len = get_u8(content, 0);
@@ -368,7 +366,7 @@ namespace cbus {
     return read_holding_registers_response(header, nd);
   }
 
-  template <> single_packet parse_single_packet<read_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <> inline single_packet parse_single_packet<read_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -377,7 +375,7 @@ namespace cbus {
     return read_holding_registers_request(header, first_register, register_count);
   }
 
-  template <> single_packet parse_single_packet<write_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <> inline single_packet parse_single_packet<write_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -386,7 +384,7 @@ namespace cbus {
     return write_holding_registers_response(header, first_register, register_count);
   }
 
-  template <> single_packet parse_single_packet<write_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+template <> inline single_packet parse_single_packet<write_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 5)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -400,10 +398,12 @@ namespace cbus {
     for (uint_fast32_t i = 0; i < u16_arr.size(); i += 2) {
       nd.push_back(get_u16(u16_arr, i));
     }
-    return write_holding_registers_request(header, first_register, register_count, nd);
+    if(register_count!=nd.size())
+return packet_error(header);
+    return write_holding_registers_request(header, first_register, nd);
   }
 
-  template <> single_packet parse_single_packet<write_single_holding_register_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<write_single_holding_register_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -412,7 +412,7 @@ namespace cbus {
     return write_single_holding_register_response(header, first_register, register_count);
   }
 
-  template <> single_packet parse_single_packet<write_single_holding_register_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<write_single_holding_register_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
     uint16_t first_register = get_u16(content, 0);
@@ -421,32 +421,35 @@ namespace cbus {
     return write_single_holding_register_request(header, first_register, register_count);
   }
 
-  template <> std::string serialize_single_packet<read_input_registers_request>(const read_input_registers_request& packet) {
+  template <> inline std::string serialize_single_packet<read_input_registers_request>(const read_input_registers_request& packet) {
     return set_u16(packet.first_register) + set_u16(packet.register_count);
   }
-  template <> std::string serialize_single_packet<read_input_registers_response>(const read_input_registers_response& packet) {
+  template <> inline std::string serialize_single_packet<read_input_registers_response>(const read_input_registers_response& packet) {
     std::string ret = set_u8(packet.register_data.size() * 2);
     for (uint16_t v : packet.register_data)
       ret += set_u16(v);
     return ret;
   }
-  template <> std::string serialize_single_packet<read_holding_registers_request>(const read_holding_registers_request& packet) {
+  template <> inline std::string serialize_single_packet<read_holding_registers_request>(const read_holding_registers_request& packet) {
     return set_u16(packet.first_register) + set_u16(packet.register_count);
   }
-  template <> std::string serialize_single_packet<read_holding_registers_response>(const read_holding_registers_response& packet) {
+  template <> inline std::string serialize_single_packet<read_holding_registers_response>(const read_holding_registers_response& packet) {
     std::string ret = set_u8(packet.register_data.size() * 2);
     for (uint16_t v : packet.register_data)
       ret += set_u16(v);
     return ret;
   }
-  template <> std::string serialize_single_packet<write_single_holding_register_request>(const write_single_holding_register_request& packet) {
+  template <> inline std::string serialize_single_packet<write_single_holding_register_request>(const write_single_holding_register_request& packet) {
     return set_u16(packet.register_index) + set_u16(packet.register_value);
   }
-  template <> std::string serialize_single_packet<write_single_holding_register_response>(const write_single_holding_register_response& packet) {
+  template <> inline std::string serialize_single_packet<write_single_holding_register_response>(const write_single_holding_register_response& packet) {
     return set_u16(packet.register_index) + set_u16(packet.register_value);
   }
-  template <> std::string serialize_single_packet<read_coils_request>(const read_coils_request& packet) { return set_u16(packet.first_coil) + set_u16(packet.coil_count); }
-  template <> std::string serialize_single_packet<read_coils_response>(const read_coils_response& packet) {
+  template <> inline std::string serialize_single_packet<write_holding_registers_response>(const write_holding_registers_response& packet) {
+    return set_u16(packet.first_register) + set_u16(packet.register_count);
+  }
+  template <> inline std::string serialize_single_packet<read_coils_request>(const read_coils_request& packet) { return set_u16(packet.first_coil) + set_u16(packet.coil_count); }
+  template <> inline std::string serialize_single_packet<read_coils_response>(const read_coils_response& packet) {
     std::string ret = set_u8((packet.coil_data.size() + 7) / 8);
     std::vector<bool> data = packet.coil_data;
     while (data.size() % 8)
@@ -459,5 +462,5 @@ namespace cbus {
     }
     return ret;
   }
-  template <> std::string serialize_single_packet<error_response>(const error_response& packet) { return set_u8(static_cast<uint8_t>(packet.error)); }
+  template <> inline std::string serialize_single_packet<error_response>(const error_response& packet) { return set_u8(static_cast<uint8_t>(packet.error)); }
 } // namespace cbus
