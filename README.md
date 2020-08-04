@@ -1,3 +1,3 @@
 # cbus
 Currently:
-Header only modbus TCP-And UDP-Driver
+Header only modbus TCP-And RTU-Driver
