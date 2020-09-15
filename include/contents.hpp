@@ -298,6 +298,7 @@ namespace cbus {
      */
     error_response(const uint16_t transaction_id, uint8_t address, function_code function, error_code ec)
         : packet(transaction_id, address, static_cast<function_code>(static_cast<uint8_t>(function) | 0x80)), error(ec) {}
+    error_response(const packet& header, const error_code ec) : packet(header), error(ec) {}
     error_code error;
   };
 
@@ -321,93 +322,99 @@ namespace cbus {
   template <> inline single_packet parse_single_packet<read_coils_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_coil = get_u16(content, 0);
-    uint16_t coil_count = get_u16(content, 2);
+    uint16_t first_coil = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t coil_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return read_coils_request(header, first_coil, coil_count);
   }
 
-template <> inline single_packet parse_single_packet<read_input_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_input_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 1)
       return not_enough_data{};
     uint8_t len = get_u8(content, 0);
     if (content.size() < (1 + len))
       return not_enough_data{};
+    if ((len % 2) != 0)
+      return packet_error{header};
     size = len + 1;
     std::string u16_arr = content.substr(1, len);
     std::vector<uint16_t> nd;
     for (uint_fast32_t i = 0; i < u16_arr.size(); i += 2) {
-      nd.push_back(get_u16(u16_arr, i));
+      nd.push_back(get_u16(__FILE__, __LINE__, u16_arr, i));
     }
     return read_input_registers_response(header, nd);
   }
 
-template <>inline single_packet parse_single_packet<read_input_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_input_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return read_input_registers_request(header, first_register, register_count);
   }
 
-template <> inline single_packet parse_single_packet<read_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 1)
       return not_enough_data{};
     uint8_t len = get_u8(content, 0);
     if (content.size() < (1 + len))
       return not_enough_data{};
+    if ((len % 2) != 0)
+      return packet_error{header};
     size = len + 1;
     std::string u16_arr = content.substr(1, len);
     std::vector<uint16_t> nd;
     for (uint_fast32_t i = 0; i < u16_arr.size(); i += 2) {
-      nd.push_back(get_u16(u16_arr, i));
+      nd.push_back(get_u16(__FILE__, __LINE__, u16_arr, i));
     }
     return read_holding_registers_response(header, nd);
   }
 
-template <> inline single_packet parse_single_packet<read_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<read_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return read_holding_registers_request(header, first_register, register_count);
   }
 
-template <> inline single_packet parse_single_packet<write_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<write_holding_registers_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return write_holding_registers_response(header, first_register, register_count);
   }
 
-template <> inline single_packet parse_single_packet<write_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+  template <> inline single_packet parse_single_packet<write_holding_registers_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 5)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     uint8_t len = get_u8(content, 4);
+    if ((len % 2) != 0)
+      return packet_error{header};
     if (content.size() < (5 + len))
       return not_enough_data{};
     size = len + 5;
     std::string u16_arr = content.substr(5, len);
     std::vector<uint16_t> nd;
     for (uint_fast32_t i = 0; i < u16_arr.size(); i += 2) {
-      nd.push_back(get_u16(u16_arr, i));
+      nd.push_back(get_u16(__FILE__, __LINE__, u16_arr, i));
     }
-    if(register_count!=nd.size())
-return packet_error(header);
+    if (register_count != nd.size())
+      return internal_error(header);
     return write_holding_registers_request(header, first_register, nd);
   }
 
   template <> inline single_packet parse_single_packet<write_single_holding_register_response>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return write_single_holding_register_response(header, first_register, register_count);
   }
@@ -415,8 +422,8 @@ return packet_error(header);
   template <> inline single_packet parse_single_packet<write_single_holding_register_request>(const packet& header, const std::string& content, uint_least64_t& size) {
     if (content.size() < 4)
       return not_enough_data{};
-    uint16_t first_register = get_u16(content, 0);
-    uint16_t register_count = get_u16(content, 2);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2);
     size = 4;
     return write_single_holding_register_request(header, first_register, register_count);
   }

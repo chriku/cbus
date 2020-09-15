@@ -43,8 +43,8 @@ namespace cbus {
     bus(const std::weak_ptr<device_type> device, const config& cfg, const std::function<void(const single_packet&)> packet_emission)
         : device_(device), config_(cfg), packet_emission_(packet_emission) {
       if ((!cfg.is_master) && (!cfg.use_tcp_format)) {
-        std::cerr << "Cannot become RTU-Slave" << std::endl;
-        abort();
+        std::cout << "Cannot become RTU-Slave" << std::endl;
+        std::this_thread::sleep_for(1000h);
       }
       bus_valid_ = std::make_shared<bool>(true);
       init_bus_handler();
@@ -149,6 +149,17 @@ namespace cbus {
      */
     single_packet parse_packet(const packet& header, const std::string& content, uint_least64_t& size) {
       if (config_.is_master) {
+        if (static_cast<uint8_t>(header.function) & 0x80) {
+          cbus::function_code fc = static_cast<cbus::function_code>(static_cast<uint8_t>(header.function) & 0x7f);
+          if ((fc == function_code::read_coils) || (fc == function_code::read_holding_registers) || (fc == function_code::write_holding_registers) ||
+              (fc == function_code::write_single_holding_register) || (fc == function_code::read_input_registers)) {
+            size = 1;
+            if (content.size())
+              return error_response(header, static_cast<error_code>(content.at(0)));
+            else
+              return packet_error(header);
+          }
+        }
         switch (header.function) {
         case function_code::read_coils:
           return parse_single_packet<read_coils_response>(header, content, size);
@@ -220,13 +231,13 @@ namespace cbus {
     bool extract_single_tcp_packet() {
       if (cache_.size() < 8)
         return false;
-      uint16_t transaction_id = get_u16(cache_, 0);
-      uint16_t protocol_id = get_u16(cache_, 2);
+      uint16_t transaction_id = get_u16(__FILE__, __LINE__, cache_, 0);
+      uint16_t protocol_id = get_u16(__FILE__, __LINE__, cache_, 2);
       if (protocol_id != 0) {
         close("invalid protocol id");
         return false;
       }
-      uint16_t length = get_u16(cache_, 4);
+      uint16_t length = get_u16(__FILE__, __LINE__, cache_, 4);
       if (length < 2) {
         close("invalid length");
         return false;
@@ -250,44 +261,40 @@ namespace cbus {
      * \param content content string
      * \return true to continue, false to abort reading
      */
-    bool process_received_rtu_packet(const packet& pkg) {
+    uint_fast64_t process_received_rtu_packet(const packet& pkg, std::string cache_) {
       uint_least64_t read_size = 0;
       if (config_.is_master || (pkg.address == config_.address)) {
         single_packet result = parse_packet(pkg, cache_.substr(2), read_size);
         if (std::holds_alternative<packet_error>(result)) {
-          cache_ = cache_.substr(1);
-          return false;
+          return 0;
         }
         if (std::holds_alternative<not_enough_data>(result)) {
-          return false;
+          return 0;
         }
         if (cache_.size() < (2 + read_size + 2)) {
-          return false;
+          return 0;
         }
-        uint16_t read_crc = get_u16(cache_, 2 + read_size);
+        uint16_t read_crc = get_u16(__FILE__, __LINE__, cache_, 2 + read_size);
         if (read_crc != calc_crc(cache_.substr(0, 2 + read_size))) {
-          cache_ = cache_.substr(1);
-          return false;
+          return 0;
         }
-        cache_ = cache_.substr(2 + read_size + 2);
         packet_emission_(result);
+        return 2 + read_size + 2;
       }
-      return true;
+      return 0;
     }
 
     /**
      * \brief extract single received rtu packet
      * \return true to continue, false to abort reading
      */
-    bool extract_single_rtu_packet() {
+    bool extract_single_rtu_packet(std::string cache_) {
       if (cache_.size() < 2)
         return false;
       uint8_t address = cache_.at(0);
       function_code function = (function_code)cache_.at(1);
       packet pkg(0, address, function);
-      if (!process_received_rtu_packet(pkg))
-        return false;
-      return true;
+      return process_received_rtu_packet(pkg, cache_);
     }
 
     /**
@@ -308,8 +315,16 @@ namespace cbus {
     void read_rtu_packets() {
       becker::bassert(!config_.use_tcp_format, __FILE__, __LINE__, "calling rtu in tcp mode");
       becker::bassert(cache_.size() > 0, __FILE__, __LINE__, "cache empty");
-      while (cache_.size() > 0) {
-        if (!extract_single_rtu_packet())
+      while (true) {
+        bool found = false;
+        for (uint_fast64_t offset = 0; offset < cache_.size(); offset++) {
+          uint_fast64_t read_offset = extract_single_rtu_packet(cache_.substr(offset));
+          if (read_offset) {
+            cache_ = cache_.substr(offset + read_offset);
+            found = true;
+          }
+        }
+        if (!found)
           break;
       }
     }
@@ -325,6 +340,8 @@ namespace cbus {
       if (closed_)
         return;
       cache_.append(data);
+      if (cache_.size() > 8192) //! TODO: Config
+        cache_ = cache_.substr(cache_.size() - 8192);
       if (cache_.size() > 0) {
         if (config_.use_tcp_format)
           read_tcp_packets();

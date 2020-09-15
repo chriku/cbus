@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <string>
+#include <thread>
+using namespace std::chrono_literals;
+using namespace std::string_literals;
 
 namespace becker {
   /**
@@ -20,10 +23,10 @@ namespace becker {
     assertion_failed_error(const char* file, uint_fast32_t line, std::string assertion_failed)
         : std::runtime_error(std::string(file) + ":" + std::to_string(line) + ": " + assertion_failed) {}
   };
-  inline void bassert(bool condition, const char* file, uint_fast32_t line, std::string assertion_failed = "becker's baking burned") {
+  inline void bassert(bool condition, const char* file, uint_fast32_t line, std::string assertion_failed = "assertion failed") {
     if (!condition) {
-      std::cerr << "Becker died in " << file << ":" << line << ": " << assertion_failed << std::endl;
-      abort();
+      std::cout << "Assertion error in " << file << ":" << line << ": " << assertion_failed << std::endl;
+      std::this_thread::sleep_for(1000h);
       // throw assertion_failed_error(file, line, assertion_failed);
     }
   }

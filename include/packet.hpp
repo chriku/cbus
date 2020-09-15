@@ -9,6 +9,9 @@
 namespace cbus {
   struct not_enough_data {};
   struct packet_error;
+  struct error_response;
+  struct unknown_packet_error;
+  struct internal_error;
   struct read_coils_response;
   struct read_coils_request;
   struct read_input_registers_request;
@@ -19,11 +22,11 @@ namespace cbus {
   struct write_single_holding_register_response;
   struct write_holding_registers_request;
   struct write_holding_registers_response;
-  struct error_response;
 
-  using single_packet = std::variant<not_enough_data, packet_error, read_coils_response, read_coils_request, read_input_registers_response, read_input_registers_request,
-                                     read_holding_registers_response, read_holding_registers_request, error_response, write_single_holding_register_request,
-                                     write_single_holding_register_response, write_holding_registers_request, write_holding_registers_response>;
+  using single_packet =
+      std::variant<not_enough_data, packet_error, unknown_packet_error, internal_error, read_coils_response, read_coils_request, read_input_registers_response,
+                   read_input_registers_request, read_holding_registers_response, read_holding_registers_request, error_response, write_single_holding_register_request,
+                   write_single_holding_register_response, write_holding_registers_request, write_holding_registers_response>;
   enum class function_code {
     invalid = 0,
     read_coils = 1,
@@ -66,20 +69,26 @@ namespace cbus {
     const function_code function;
   };
 
-  struct packet_error: packet {
-packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function):packet(p_transaction_id,p_address,p_function){}
-packet_error(const packet& header)
-        : packet(header){}
-};
-
+  struct packet_error : packet {
+    packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
+    packet_error(const packet& header) : packet(header) {}
+  };
+  struct internal_error : packet {
+    internal_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
+    internal_error(const packet& header) : packet(header) {}
+  };
+  struct unknown_packet_error : packet {
+    unknown_packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
+    unknown_packet_error(const packet& header) : packet(header) {}
+  };
 
   /**
    * \brief Read single 16bit value
    * \param start_index the first byte in cache_ to read
    * \return the read and converted values
    */
-  inline uint16_t get_u16(const std::string string, const size_t start_index = 0) {
-    becker::bassert((start_index + 1) < string.size(), __FILE__, __LINE__);
+  inline uint16_t get_u16(const char* file, uint_fast32_t line, const std::string string, const size_t start_index = 0) {
+    becker::bassert((start_index + 1) < string.size(), file, line);
     uint16_t value = 0;
     value |= ((uint8_t)string.at(start_index));
     value <<= 8;
