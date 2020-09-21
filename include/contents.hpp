@@ -446,6 +446,12 @@ namespace cbus {
       ret += set_u16(v);
     return ret;
   }
+  template <> inline std::string serialize_single_packet<write_holding_registers_request>(const write_holding_registers_request& packet) {
+    std::string ret = set_u16(packet.first_register) + set_u16(packet.register_content.size()) + set_u8(packet.register_content.size() * 2);
+    for (uint16_t v : packet.register_content)
+      ret += set_u16(v);
+    return ret;
+  }
   template <> inline std::string serialize_single_packet<write_single_holding_register_request>(const write_single_holding_register_request& packet) {
     return set_u16(packet.register_index) + set_u16(packet.register_value);
   }
