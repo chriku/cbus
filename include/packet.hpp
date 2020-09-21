@@ -23,10 +23,22 @@ namespace cbus {
   struct write_holding_registers_request;
   struct write_holding_registers_response;
 
-  using single_packet =
-      std::variant<not_enough_data, packet_error, unknown_packet_error, internal_error, read_coils_response, read_coils_request, read_input_registers_response,
-                   read_input_registers_request, read_holding_registers_response, read_holding_registers_request, error_response, write_single_holding_register_request,
-                   write_single_holding_register_response, write_holding_registers_request, write_holding_registers_response>;
+  using single_packet = std::variant<not_enough_data,                        // 0
+                                     packet_error,                           // 1
+                                     unknown_packet_error,                   // 2
+                                     internal_error,                         // 3
+                                     read_coils_response,                    // 4
+                                     read_coils_request,                     // 5
+                                     read_input_registers_response,          // 6
+                                     read_input_registers_request,           // 7
+                                     read_holding_registers_response,        // 8
+                                     read_holding_registers_request,         // 9
+                                     error_response,                         // 10
+                                     write_single_holding_register_request,  // 11
+                                     write_single_holding_register_response, // 12
+                                     write_holding_registers_request,        // 13
+                                     write_holding_registers_response        // 14
+                                     >;
   enum class function_code {
     invalid = 0,
     read_coils = 1,
