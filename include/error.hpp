@@ -1,5 +1,5 @@
 #pragma once
 
 namespace cbus {
-  enum class error_code { illegal_function = 1 };
+  enum class error_code : uint8_t { illegal_function = 1, illegal_data_address = 2 };
 }
