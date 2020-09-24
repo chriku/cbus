@@ -201,7 +201,7 @@ namespace cbus {
      */
     bool process_received_tcp_packet(const packet& pkg, const std::string& content) {
       uint_least64_t read_size = 0;
-      if (config_.is_master || (pkg.address == config_.address)) {
+      if (config_.is_master || (pkg.address == config_.address) || !config_.address) {
         single_packet result = parse_packet(pkg, content, read_size);
         if (std::holds_alternative<packet_error>(result)) {
           if (config_.close_on_error) {
@@ -263,7 +263,7 @@ namespace cbus {
      */
     uint_fast64_t process_received_rtu_packet(const packet& pkg, std::string cache_) {
       uint_least64_t read_size = 0;
-      if (config_.is_master || (pkg.address == config_.address)) {
+      if (config_.is_master || (pkg.address == config_.address) || !config_.address) {
         single_packet result = parse_packet(pkg, cache_.substr(2), read_size);
         if (std::holds_alternative<packet_error>(result)) {
           return 0;
