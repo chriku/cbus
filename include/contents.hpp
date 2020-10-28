@@ -290,15 +290,25 @@ namespace cbus {
    */
   struct error_response : packet {
     /**
-     * \brief create nmew coils response
+     * \brief create new error response
      * \param transaction_id The id of the transaction
      * \param address The address of the target
-     * \param first_register The content
-     * \param register_count The content
+     * \param function The Function this is an answer to
+     * \param ec The error code to contain
      */
     error_response(const uint16_t transaction_id, uint8_t address, function_code function, error_code ec)
         : packet(transaction_id, address, static_cast<function_code>(static_cast<uint8_t>(function) | 0x80)), error(ec) {}
+    /**
+     * \brief Create a new error response from package header
+     * \param header The header to copy info from
+     * \param ec Error code to save
+     *
+    */
     error_response(const packet& header, const error_code ec) : packet(header), error(ec) {}
+
+    /**
+     * Error code carried by this packet
+     */
     error_code error;
   };
 

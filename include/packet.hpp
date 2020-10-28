@@ -81,14 +81,25 @@ namespace cbus {
     const function_code function;
   };
 
+  /**
+  * \brief Error Packet for common error
+  */
   struct packet_error : packet {
     packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     packet_error(const packet& header) : packet(header) {}
   };
+
+  /**
+  * \brief Error Packet for internal programming issues
+  */
   struct internal_error : packet {
     internal_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     internal_error(const packet& header) : packet(header) {}
   };
+
+  /**
+  * \brief Error Packet for unknown function code
+  */
   struct unknown_packet_error : packet {
     unknown_packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     unknown_packet_error(const packet& header) : packet(header) {}

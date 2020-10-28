@@ -41,6 +41,9 @@ namespace cbus {
      */
     uint8_t address;
 
+    /**
+     * \brief Close socket if any kind of error occurs
+     */
     bool close_on_error=false;
   };
 } // namespace cbus
