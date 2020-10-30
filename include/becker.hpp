@@ -25,9 +25,7 @@ namespace becker {
   };
   inline void bassert(bool condition, const char* file, uint_fast32_t line, std::string assertion_failed = "assertion failed") {
     if (!condition) {
-      std::cout << "Assertion error in " << file << ":" << line << ": " << assertion_failed << std::endl;
-      std::this_thread::sleep_for(1000h);
-      // throw assertion_failed_error(file, line, assertion_failed);
+      throw assertion_failed_error(file, line, assertion_failed);
     }
   }
 } // namespace becker

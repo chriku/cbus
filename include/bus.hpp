@@ -43,8 +43,7 @@ namespace cbus {
     bus(const std::weak_ptr<device_type> device, const config& cfg, const std::function<void(const single_packet&)> packet_emission)
         : device_(device), config_(cfg), packet_emission_(packet_emission) {
       if ((!cfg.is_master) && (!cfg.use_tcp_format)) {
-        std::cout << "Cannot become RTU-Slave" << std::endl;
-        std::this_thread::sleep_for(1000h);
+        throw std::domain_error("Cannot become RTU-Slave");
       }
       bus_valid_ = std::make_shared<bool>(true);
       init_bus_handler();
