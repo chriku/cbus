@@ -20,6 +20,8 @@ namespace cbus {
   struct read_holding_registers_response;
   struct write_single_holding_register_request;
   struct write_single_holding_register_response;
+  struct write_single_holding_register_devaddr_request;
+  struct write_single_holding_register_devaddr_response;
   struct write_holding_registers_request;
   struct write_holding_registers_response;
 
@@ -37,8 +39,8 @@ namespace cbus {
                                      write_single_holding_register_request,  // 11
                                      write_single_holding_register_response, // 12
                                      write_holding_registers_request,        // 13
-                                     write_holding_registers_response        // 14
-                                     >;
+                                     write_holding_registers_response,       // 14
+                                     write_single_holding_register_devaddr_request, write_single_holding_register_devaddr_response>;
   enum class function_code {
     invalid = 0,
     read_coils = 1,
@@ -48,7 +50,8 @@ namespace cbus {
     write_single_coil = 5,
     write_single_holding_register = 6,
     write_multiple_coils = 15,
-    write_holding_registers = 16
+    write_holding_registers = 16,
+    write_single_holding_register_devaddr = 0x46
   };
 
   /**
@@ -82,24 +85,24 @@ namespace cbus {
   };
 
   /**
-  * \brief Error Packet for common error
-  */
+   * \brief Error Packet for common error
+   */
   struct packet_error : packet {
     packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     packet_error(const packet& header) : packet(header) {}
   };
 
   /**
-  * \brief Error Packet for internal programming issues
-  */
+   * \brief Error Packet for internal programming issues
+   */
   struct internal_error : packet {
     internal_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     internal_error(const packet& header) : packet(header) {}
   };
 
   /**
-  * \brief Error Packet for unknown function code
-  */
+   * \brief Error Packet for unknown function code
+   */
   struct unknown_packet_error : packet {
     unknown_packet_error(const uint16_t p_transaction_id, const uint8_t p_address, const function_code p_function) : packet(p_transaction_id, p_address, p_function) {}
     unknown_packet_error(const packet& header) : packet(header) {}

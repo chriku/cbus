@@ -151,7 +151,7 @@ namespace cbus {
         if (static_cast<uint8_t>(header.function) & 0x80) {
           cbus::function_code fc = static_cast<cbus::function_code>(static_cast<uint8_t>(header.function) & 0x7f);
           if ((fc == function_code::read_coils) || (fc == function_code::read_holding_registers) || (fc == function_code::write_holding_registers) ||
-              (fc == function_code::write_single_holding_register) || (fc == function_code::read_input_registers)) {
+              (fc == function_code::write_single_holding_register) || (fc == function_code::write_single_holding_register_devaddr) || (fc == function_code::read_input_registers)) {
             size = 1;
             if (content.size())
               return error_response(header, static_cast<error_code>(content.at(0)));
@@ -168,6 +168,8 @@ namespace cbus {
           return parse_single_packet<write_holding_registers_response>(header, content, size);
         case function_code::write_single_holding_register:
           return parse_single_packet<write_single_holding_register_response>(header, content, size);
+        case function_code::write_single_holding_register_devaddr:
+          return parse_single_packet<write_single_holding_register_devaddr_response>(header, content, size);
         case function_code::read_input_registers:
           return parse_single_packet<read_input_registers_response>(header, content, size);
         default:
@@ -185,6 +187,8 @@ namespace cbus {
           return parse_single_packet<write_holding_registers_request>(header, content, size);
         case function_code::write_single_holding_register:
           return parse_single_packet<write_single_holding_register_request>(header, content, size);
+        case function_code::write_single_holding_register_devaddr:
+          return parse_single_packet<write_single_holding_register_devaddr_request>(header, content, size);
         default:
           return packet_error(header);
         }

@@ -284,6 +284,55 @@ namespace cbus {
     uint16_t register_index;
     uint16_t register_value;
   };
+  struct devaddr_t {
+    uint8_t addr[6] = {0x32, 0x43, 0x36, 0x4b, 0x13, 0x11};
+  };
+  struct write_single_holding_register_devaddr_response : packet {
+    /**
+     * \brief create nmew coils response
+     * \param transaction_id The id of the transaction
+     * \param address The address of the target
+     * \param register_data The content
+     */
+    write_single_holding_register_devaddr_response(const uint16_t transaction_id, uint8_t address, devaddr_t devaddr, uint16_t register_index, uint16_t register_value)
+        : packet(transaction_id, address, function_code::write_single_holding_register_devaddr), devaddr(devaddr), register_index(register_index), register_value(register_value) {}
+    /**
+     * \brief construct new read_registers_response
+     * \param header containing header struff
+     * \param register_data string describing the content of the registers
+     */
+    write_single_holding_register_devaddr_response(const packet& header, devaddr_t devaddr, uint16_t register_index, uint16_t register_value)
+        : packet(header), devaddr(devaddr), register_index(register_index), register_value(register_value) {}
+    devaddr_t devaddr;
+    uint16_t register_index;
+    uint16_t register_value;
+  };
+
+  /**
+   * \brief response for function code 4 read input register
+   */
+  struct write_single_holding_register_devaddr_request : packet {
+    /**
+     * \brief create nmew coils response
+     * \param transaction_id The id of the transaction
+     * \param address The address of the target
+     * \param first_register The content
+     * \param register_count The content
+     */
+    write_single_holding_register_devaddr_request(const uint16_t transaction_id, uint8_t address, devaddr_t devaddr, uint16_t register_index, uint16_t register_value)
+        : packet(transaction_id, address, function_code::write_single_holding_register_devaddr), devaddr(devaddr), register_index(register_index), register_value(register_value) {}
+    /**
+     * \brief construct new register_registers_request
+     * \param header containing header struff
+     * \param first_register index of first register
+     * \param register_count number of registers to request
+     */
+    write_single_holding_register_devaddr_request(const packet& header, devaddr_t devaddr, uint16_t register_index, uint16_t register_value)
+        : packet(header), devaddr(devaddr), register_index(register_index), register_value(register_value) {}
+    devaddr_t devaddr;
+    uint16_t register_index;
+    uint16_t register_value;
+  };
 
   /**
    * \brief response for function code 4 read input register
@@ -303,7 +352,7 @@ namespace cbus {
      * \param header The header to copy info from
      * \param ec Error code to save
      *
-    */
+     */
     error_response(const packet& header, const error_code ec) : packet(header), error(ec) {}
 
     /**
@@ -437,6 +486,27 @@ namespace cbus {
     size = 4;
     return write_single_holding_register_request(header, first_register, register_count);
   }
+  template <> inline single_packet parse_single_packet<write_single_holding_register_devaddr_response>(const packet& header, const std::string& content, uint_least64_t& size) {
+    if (content.size() < 4 + 6)
+      return not_enough_data{};
+    devaddr_t da;
+    memcpy(reinterpret_cast<void*>(&da), content.data(), 6);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0 + 6);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2 + 6);
+    size = 4 + 6;
+    return write_single_holding_register_devaddr_response(header, da, first_register, register_count);
+  }
+
+  template <> inline single_packet parse_single_packet<write_single_holding_register_devaddr_request>(const packet& header, const std::string& content, uint_least64_t& size) {
+    if (content.size() < 4 + 6)
+      return not_enough_data{};
+    devaddr_t da;
+    memcpy(reinterpret_cast<void*>(&da), content.data(), 6);
+    uint16_t first_register = get_u16(__FILE__, __LINE__, content, 0 + 6);
+    uint16_t register_count = get_u16(__FILE__, __LINE__, content, 2 + 6);
+    size = 4 + 6;
+    return write_single_holding_register_devaddr_request(header, da, first_register, register_count);
+  }
 
   template <> inline std::string serialize_single_packet<read_input_registers_request>(const read_input_registers_request& packet) {
     return set_u16(packet.first_register) + set_u16(packet.register_count);
@@ -464,6 +534,9 @@ namespace cbus {
   }
   template <> inline std::string serialize_single_packet<write_single_holding_register_request>(const write_single_holding_register_request& packet) {
     return set_u16(packet.register_index) + set_u16(packet.register_value);
+  }
+  template <> inline std::string serialize_single_packet<write_single_holding_register_devaddr_request>(const write_single_holding_register_devaddr_request& packet) {
+    return std::string(reinterpret_cast<const char*>(&packet.devaddr), 6) + set_u16(packet.register_index) + set_u16(packet.register_value);
   }
   template <> inline std::string serialize_single_packet<write_single_holding_register_response>(const write_single_holding_register_response& packet) {
     return set_u16(packet.register_index) + set_u16(packet.register_value);
